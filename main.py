@@ -1,11 +1,11 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, TaskType
 from trl import SFTTrainer, SFTConfig
-from Data import fgsm, gpqa
+from Data import combined_train
 import torch
 
 # load model and tokenizer
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B", dtype=torch.bfloat16, low_cpu_mem_usage=False).to("cuda")
+model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B", dtype=torch.bfloat16).to("cuda")
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B")
 tokenizer.pad_token = tokenizer.eos_token
 
@@ -37,14 +37,16 @@ args = SFTConfig(
 
 #test_set = fgsm["train"].select(range(50))
 
-# Train
-gsm_trainer = SFTTrainer(
+# Train gpqa
+trainer = SFTTrainer(
     model=model,
     args=args,
-    train_dataset = fgsm["train"],
+    train_dataset = combined_train,
     peft_config=lora,
     processing_class=tokenizer,
 )
 
-gsm_trainer.train()
-trainer.save_model("./tuned-qwen-gsm")
+
+trainer.train()
+
+trainer.save_model("./tuned-qwen")
