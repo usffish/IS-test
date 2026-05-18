@@ -217,3 +217,17 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .idea/
+
+# Model weights and checkpoints (large binary files — host on HF Hub instead)
+*.safetensors
+*.pt
+*.pth
+*.bin
+output/
+tuned-qwen*/
+
+# Evaluation results (generated locally)
+results/
+
+# CodeCarbon emissions log
+emissions.csv

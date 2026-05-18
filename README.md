@@ -11,6 +11,17 @@ This project fine-tunes **Qwen/Qwen2.5-1.5B** using **LoRA** (Low-Rank Adaptatio
 
 The goal is to measure how much reasoning ability a 1.5B parameter model can gain from targeted SFT on these two datasets, and to compare pre- and post-fine-tuning performance.
 
+## Results
+
+Evaluated using [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) with chain-of-thought prompting on GSM8K and normalized accuracy on GPQA.
+
+| Dataset | Baseline (Qwen2.5-1.5B) | Fine-tuned | Δ |
+|---|---|---|---|
+| GSM8K (`exact_match`) | — | — | — |
+| GPQA (`acc_norm`) | — | — | — |
+
+> Results will be filled in after running `python test.py` against both models (see [Evaluation](#evaluation) below).
+
 ## Project Structure
 
 ```
@@ -19,13 +30,10 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 ├── Data.py           # Dataset loading, formatting, and splitting
 ├── test.py           # Evaluation script using lm-evaluation-harness
 ├── requirements.txt  # Python dependencies
-├── output/           # Training checkpoints
-│   └── checkpoint-12/
-│       ├── adapter_config.json
-│       ├── adapter_model.safetensors
-│       └── trainer_state.json
-└── tuned-qwen-gsm/   # Saved fine-tuned model weights
+└── output/           # Training checkpoints (git-ignored; see note below)
 ```
+
+> **Model weights** are not committed to this repo due to file size. The fine-tuned adapter and merged model can be loaded from the saved local path or uploaded to Hugging Face Hub.
 
 ## Setup
 
@@ -84,24 +92,28 @@ The script will:
 
 The `test.py` script uses [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) to benchmark any model on `gsm8k_cot` and `gpqa_main`.
 
-**Evaluate a model:**
+**Step 1 — Evaluate the baseline:**
 ```bash
 python test.py --model Qwen/Qwen2.5-1.5B --output results/baseline.json
+```
+
+**Step 2 — Evaluate the fine-tuned model:**
+```bash
 python test.py --model ./tuned-qwen --output results/finetuned.json
 ```
 
-**Compare baseline vs. fine-tuned:**
+**Step 3 — Compare:**
 ```bash
 python test.py --compare results/baseline.json results/finetuned.json
 ```
 
-Output example:
+Output format:
 ```
 ==================================================
 Dataset      Baseline   Fine-tuned     Change
 --------------------------------------------------
-gsm8k          42.00%      55.30%      ↑13.30%
-gpqa           25.00%      28.50%       ↑3.50%
+gsm8k          xx.xx%      xx.xx%      ↑x.xx%
+gpqa           xx.xx%      xx.xx%      ↑x.xx%
 ==================================================
 ```
 
