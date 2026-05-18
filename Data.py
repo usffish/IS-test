@@ -1,8 +1,8 @@
 from datasets import load_dataset
 
 # import datasets
-gsm = load_dataset("gsm8k", "main")
-gpqa = load_dataset("Idavidrein/gpqa", "gpqa_main")
+gsm = load_dataset("gsm8k", "main", token=os.environ.get("HF_TOKEN"))
+gpqa = load_dataset("Idavidrein/gpqa", "gpqa_main", token=os.environ.get("HF_TOKEN"))
 '''
 # Explore
 print ("GSM8K")
