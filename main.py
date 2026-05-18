@@ -23,7 +23,7 @@ lora = LoraConfig(
 # config
 args = SFTConfig(
     output_dir="./output",
-    num_train_epochs=3,
+    num_train_epochs=1,
     per_device_train_batch_size=4,
     gradient_accumulation_steps=4,
     learning_rate=2e-4,
@@ -31,7 +31,7 @@ args = SFTConfig(
     lr_scheduler_type="cosine",
     logging_steps=10,
     save_steps=100,
-    max_length=2000,
+    max_length=512,
     fp16=False, bf16=True,
 )
 
