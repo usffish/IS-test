@@ -38,7 +38,7 @@ args = SFTConfig(
 #test_set = fgsm["train"].select(range(50))
 
 # Train
-mps_trainer = SFTTrainer(
+gsm_trainer = SFTTrainer(
     model=model,
     args=args,
     train_dataset = fgsm["train"],
@@ -46,5 +46,5 @@ mps_trainer = SFTTrainer(
     processing_class=tokenizer,
 )
 
-mps_trainer.train()
-model.save_pretrained("./tuned-qwen-gsm")
+gsm_trainer.train()
+trainer.save_model("./tuned-qwen-gsm")
