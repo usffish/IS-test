@@ -5,7 +5,7 @@ from Data import fgsm, gpqa
 import torch
 
 # load model and tokenizer
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B", dtype=torch.float32, low_cpu_mem_usage=False).to("mps")
+model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B", dtype=torch.bfloat16, low_cpu_mem_usage=False).to("cuda")
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B")
 tokenizer.pad_token = tokenizer.eos_token
 
@@ -32,9 +32,10 @@ args = SFTConfig(
     logging_steps=10,
     save_steps=100,
     max_length=2000,
-    fp16=False, bf16=False,
-    dataloader_pin_memory=False,
+    fp16=False, bf16=True,
 )
+
+#test_set = fgsm["train"].select(range(50))
 
 # Train
 mps_trainer = SFTTrainer(
