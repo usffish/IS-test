@@ -13,15 +13,13 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 
 ## Results
 
-- **GSM8K** — evaluated manually on 200 examples from the official test split. Uses the same `<|im_start|>` chat template as training, with `max_new_tokens=256`. lm-eval was dropped because its task yaml hardcodes `max_new_tokens=2048` and cannot be overridden, making a full run take 3+ hours.
+- **GSM8K** — evaluated manually on 200 examples from the official test split, with `max_new_tokens=256`
 - **GPQA** — evaluated manually on the held-out 20% split from `Data.py` (seed=42) to prevent data leakage from the 80% used in training
 
 | Dataset | Baseline (Qwen2.5-1.5B) | Fine-tuned | Δ |
 |---|---|---|---|
-| GSM8K (`exact_match`, 200 samples, 5-shot) | — | — | — |
-| GPQA (`acc`, held-out 20%) | — | — | — |
-
-> Results will be filled in after running `python test.py` against both models (see [Evaluation](#evaluation) below).
+| GSM8K (`exact_match`, 200 samples) | 12.00% | 65.50% | ↑53.50% |
+| GPQA (`acc`, held-out 20%) | 1.11% | 26.67% | ↑25.56% |
 
 ## Project Structure
 

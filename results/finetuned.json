@@ -1,0 +1,5 @@
+{
+  "model": "./tuned-qwen",
+  "gsm8k": 0.655,
+  "gpqa": 0.2667
+}

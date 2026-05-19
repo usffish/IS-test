@@ -227,7 +227,7 @@ output/
 tuned-qwen*/
 
 # Evaluation results (generated locally)
-results/
+# results/
 
 # CodeCarbon emissions log
 emissions.csv
