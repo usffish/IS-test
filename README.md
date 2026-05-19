@@ -13,7 +13,7 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 
 ## Results
 
-- **GSM8K** — evaluated via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) using 5-shot evaluation (short answers) on 200 samples from the official test split. CoT variant was not used as its 2048-token generation limit makes it impractically slow on a single GPU.
+- **GSM8K** — evaluated manually on 200 examples from the official test split. Uses the same `<|im_start|>` chat template as training, with `max_new_tokens=256`. lm-eval was dropped because its task yaml hardcodes `max_new_tokens=2048` and cannot be overridden, making a full run take 3+ hours.
 - **GPQA** — evaluated manually on the held-out 20% split from `Data.py` (seed=42) to prevent data leakage from the 80% used in training
 
 | Dataset | Baseline (Qwen2.5-1.5B) | Fine-tuned | Δ |
@@ -91,10 +91,7 @@ The script will:
 
 ## Evaluation
 
-`test.py` uses two different evaluation strategies to avoid data leakage:
-
-- **GSM8K** — uses [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) on the official test split, which was never seen during training
-- **GPQA** — evaluated manually using the exact held-out 20% from `Data.py` (seed=42). Since GPQA has no official split, using lm-eval's `gpqa_main` task would include training examples in the eval, so the model runs inference directly on `test_set_gpqa` instead
+Both benchmarks are evaluated manually using `transformers` directly, giving full control over generation settings. lm-eval was dropped because its task yamls hardcode `max_new_tokens=2048` and cannot be overridden.
 
 **Step 1 — Evaluate the baseline:**
 ```bash
@@ -109,16 +106,6 @@ python test.py --model ./tuned-qwen-gsm --output results/finetuned.json
 **Step 3 — Compare:**
 ```bash
 python test.py --compare results/baseline.json results/finetuned.json
-```
-
-Output format:
-```
-==================================================
-Dataset      Baseline   Fine-tuned     Change
---------------------------------------------------
-gsm8k          xx.xx%      xx.xx%      ↑x.xx%
-gpqa           xx.xx%      xx.xx%      ↑x.xx%
-==================================================
 ```
 
 ## Data Pipeline

@@ -1,30 +1,55 @@
-import argparse, json, os, torch
+import argparse, json, os, re, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from lm_eval import simple_evaluate
-from lm_eval.utils import make_table
+from datasets import load_dataset
 
-# GSM8K is safe to evaluate via lm-eval because it has a dedicated test split
-# that was never seen during training. GPQA has no official split, so we
-# evaluate it manually using the exact 20% held-out set from Data.py to
-# prevent any data leakage from the 80% used in training.
+# Both benchmarks are evaluated manually to avoid lm-eval's hardcoded
+# max_new_tokens=2048 which cannot be overridden via gen_kwargs.
+# GSM8K uses the official test split; GPQA uses the held-out 20% from
+# Data.py (seed=42) to prevent leakage from the 80% used in training.
 
 
-def eval_gsm(model_args, device):
-    # Run GSM8K via lm-eval using 5-shot evaluation (short answers, no CoT).
-    # gsm8k_cot generates up to 2048 tokens per example and the task yaml
-    # overrides gen_kwargs, making it impractically slow (~3.6 hrs for 1319 examples).
-    # gsm8k (non-CoT) generates short answers and runs in ~30 minutes.
-    # limit=200: evaluate on 200 examples for a reliable estimate
-    results = simple_evaluate(
-        model="hf", model_args=model_args,
-        tasks=["gsm8k"],
-        apply_chat_template=True, batch_size=8,
-        device=device, log_samples=False,
-        limit=200,
-    )
-    print(make_table(results))
-    # strict-match: the answer must exactly match the expected number
-    return results["results"]["gsm8k"].get("exact_match,strict-match", 0)
+def eval_gsm(model_path, device):
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    tokenizer.pad_token = tokenizer.eos_token
+    # Load in bf16 to match training precision; eval() disables dropout
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path, torch_dtype=torch.bfloat16
+    ).to(device).eval()
+
+    # Use the official GSM8K test split, capped at 200 examples for speed
+    test = load_dataset("gsm8k", "main")["test"].select(range(200))
+
+    def extract_answer(text):
+        # GSM8K answers are formatted as "#### 42" — extract that number first
+        match = re.search(r"####\s*(-?[\d,]+)", text)
+        if match:
+            return match.group(1).replace(",", "")
+        # Fallback: take the last number in the text
+        numbers = re.findall(r"-?[\d,]+", text)
+        return numbers[-1].replace(",", "") if numbers else None
+
+    correct = 0
+    for ex in test:
+        # Format prompt using Qwen's chat template, leave assistant turn open
+        prompt = (f"<|im_start|>user\n{ex['question']}<|im_end|>\n"
+                  f"<|im_start|>assistant\n")
+        inputs = tokenizer(prompt, return_tensors="pt",
+                           truncation=True, max_length=512).to(device)
+        with torch.no_grad():
+            # 256 tokens is enough for a short numeric answer
+            out = model.generate(**inputs, max_new_tokens=256, do_sample=False)
+
+        # Decode only the newly generated tokens (skip the prompt)
+        response  = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:],
+                                     skip_special_tokens=True)
+        predicted = extract_answer(response)
+        gold      = extract_answer(ex["answer"])
+        if predicted == gold:
+            correct += 1
+
+    acc = correct / len(test)
+    print(f"GSM8K (n=200): {acc:.2%}")
+    return acc
 
 
 def eval_gpqa(model_path, device):
@@ -34,28 +59,21 @@ def eval_gpqa(model_path, device):
     from Data import test_set_gpqa
 
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    # Match tokenizer settings from training (main.py)
     tokenizer.pad_token = tokenizer.eos_token
-
-    # Load in bf16 to match training precision; eval() disables dropout
     model = AutoModelForCausalLM.from_pretrained(
         model_path, torch_dtype=torch.bfloat16
     ).to(device).eval()
 
     correct = 0
     for ex in test_set_gpqa:
-        # ex["text"] contains the full formatted example including the answer:
-        #   <|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant\nB<|im_end|>
-        # Strip the assistant answer so the model only sees the question prompt,
-        # then re-add the opening assistant tag to prime generation.
-        # Without this the model sees the correct answer before predicting it.
+        # ex["text"] contains the full example including the answer turn.
+        # Strip everything from <|im_start|>assistant onward, then re-add
+        # the opening tag to prime the model to generate the answer letter.
         prompt = ex["text"].split("<|im_start|>assistant")[0] + "<|im_start|>assistant\n"
         inputs = tokenizer(prompt, return_tensors="pt",
                            truncation=True, max_length=512).to(device)
-
         with torch.no_grad():
             # Generate a single token — the model just needs to pick A/B/C/D
-            # do_sample=False ensures greedy (deterministic) decoding
             out = model.generate(**inputs, max_new_tokens=1, do_sample=False)
 
         # Decode only the newly generated token (skip the prompt tokens)
@@ -72,15 +90,9 @@ def run_eval(model_path, output_path):
     # Pick the best available device: GPU > Apple Silicon > CPU
     device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
-    # Build model arg string for lm-eval; append HF token if set in environment
-    model_args = f"pretrained={model_path}"
-    if os.environ.get("HF_TOKEN"):
-        model_args += f",token={os.environ['HF_TOKEN']}"
-
-    gsm_acc  = eval_gsm(model_args, device)   # lm-eval on official test split
+    gsm_acc  = eval_gsm(model_path, device)   # manual eval on GSM8K test split
     gpqa_acc = eval_gpqa(model_path, device)  # manual eval on held-out 20%
 
-    # Save a compact summary JSON for later comparison
     os.makedirs("results", exist_ok=True)
     with open(output_path, "w") as f:
         json.dump({"model": model_path,
