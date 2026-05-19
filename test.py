@@ -13,7 +13,7 @@ def eval_gsm(model_path, device):
     tokenizer.pad_token = tokenizer.eos_token
     # Load in bf16 to match training precision; eval() disables dropout
     model = AutoModelForCausalLM.from_pretrained(
-        model_path, torch_dtype=torch.bfloat16
+        model_path, dtype=torch.bfloat16
     ).to(device).eval()
 
     # Use the official GSM8K test split, capped at 200 examples for speed
@@ -37,7 +37,8 @@ def eval_gsm(model_path, device):
                            truncation=True, max_length=512).to(device)
         with torch.no_grad():
             # 256 tokens is enough for a short numeric answer
-            out = model.generate(**inputs, max_new_tokens=256, do_sample=False)
+            out = model.generate(**inputs, max_new_tokens=256, do_sample=False,
+                                 pad_token_id=tokenizer.eos_token_id)
 
         # Decode only the newly generated tokens (skip the prompt)
         response  = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:],
@@ -61,7 +62,7 @@ def eval_gpqa(model_path, device):
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(
-        model_path, torch_dtype=torch.bfloat16
+        model_path, dtype=torch.bfloat16
     ).to(device).eval()
 
     correct = 0
@@ -74,7 +75,8 @@ def eval_gpqa(model_path, device):
                            truncation=True, max_length=512).to(device)
         with torch.no_grad():
             # Generate a single token — the model just needs to pick A/B/C/D
-            out = model.generate(**inputs, max_new_tokens=1, do_sample=False)
+            out = model.generate(**inputs, max_new_tokens=1, do_sample=False,
+                                 pad_token_id=tokenizer.eos_token_id)
 
         # Decode only the newly generated token (skip the prompt tokens)
         predicted = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:]).strip()
