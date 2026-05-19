@@ -34,8 +34,7 @@ def eval_gpqa(model_path, device):
     from Data import test_set_gpqa
 
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    # Match the tokenizer settings used in training (main.py):
-    #   pad_token = eos_token, padding_side uses Qwen's default (right)
+    # Match tokenizer settings from training (main.py)
     tokenizer.pad_token = tokenizer.eos_token
 
     # Load in bf16 to match training precision; eval() disables dropout
@@ -45,9 +44,13 @@ def eval_gpqa(model_path, device):
 
     correct = 0
     for ex in test_set_gpqa:
-        # Each example already has the formatted prompt and the correct label
-        # from format_gpqa() in Data.py — reuse them directly
-        inputs = tokenizer(ex["text"], return_tensors="pt",
+        # ex["text"] contains the full formatted example including the answer:
+        #   <|im_start|>user\n{question}<|im_end|>\n<|im_start|>assistant\nB<|im_end|>
+        # Strip the assistant answer so the model only sees the question prompt,
+        # then re-add the opening assistant tag to prime generation.
+        # Without this the model sees the correct answer before predicting it.
+        prompt = ex["text"].split("<|im_start|>assistant")[0] + "<|im_start|>assistant\n"
+        inputs = tokenizer(prompt, return_tensors="pt",
                            truncation=True, max_length=512).to(device)
 
         with torch.no_grad():
@@ -79,17 +82,17 @@ def run_eval(model_path, output_path):
 
     # Save a compact summary JSON for later comparison
     os.makedirs("results", exist_ok=True)
-    json.dump({"model": model_path,
-               "gsm8k": round(float(gsm_acc), 4),
-               "gpqa":  round(float(gpqa_acc), 4)},
-              open(output_path, "w"), indent=2)
+    with open(output_path, "w") as f:
+        json.dump({"model": model_path,
+                   "gsm8k": round(float(gsm_acc), 4),
+                   "gpqa":  round(float(gpqa_acc), 4)}, f, indent=2)
     print(f"GSM8K: {gsm_acc:.2%}  |  GPQA: {gpqa_acc:.2%}  |  Saved → {output_path}")
 
 
 def compare(baseline_path, finetuned_path):
     # Load both result JSONs and print a side-by-side delta table
-    b  = json.load(open(baseline_path))
-    ft = json.load(open(finetuned_path))
+    with open(baseline_path)  as f: b  = json.load(f)
+    with open(finetuned_path) as f: ft = json.load(f)
 
     print(f"\n{'='*50}")
     print(f"{'Dataset':<12} {'Baseline':>10} {'Fine-tuned':>12} {'Change':>10}")
