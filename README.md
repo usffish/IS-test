@@ -28,7 +28,6 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 ├── main.py              # Training script (LoRA + SFT via TRL)
 ├── Data.py              # Dataset loading, formatting, and splitting
 ├── test.py              # Evaluation script — manual inference on GSM8K and GPQA
-├── Learnings.ipynb      # Exploratory notebook — experiments and observations
 ├── requirements.txt     # Python dependencies
 ├── results/
 │   ├── baseline.json    # Baseline evaluation results (Qwen2.5-1.5B)
