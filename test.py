@@ -29,7 +29,7 @@ def eval_gsm(model_path, device):
         return numbers[-1].replace(",", "") if numbers else None
 
     correct = 0
-    for ex in test:
+    for i, ex in enumerate(test):
         # Format prompt using Qwen's chat template, leave assistant turn open
         prompt = (f"<|im_start|>user\n{ex['question']}<|im_end|>\n"
                   f"<|im_start|>assistant\n")
@@ -47,6 +47,8 @@ def eval_gsm(model_path, device):
         gold      = extract_answer(ex["answer"])
         if predicted == gold:
             correct += 1
+        if (i + 1) % 20 == 0:
+            print(f"  GSM8K [{i+1}/{len(test)}] running accuracy: {correct/(i+1):.2%}")
 
     acc = correct / len(test)
     print(f"GSM8K (n=200): {acc:.2%}")
@@ -66,7 +68,7 @@ def eval_gpqa(model_path, device):
     ).to(device).eval()
 
     correct = 0
-    for ex in test_set_gpqa:
+    for i, ex in enumerate(test_set_gpqa):
         # ex["text"] contains the full example including the answer turn.
         # Strip everything from <|im_start|>assistant onward, then re-add
         # the opening tag to prime the model to generate the answer letter.
@@ -82,6 +84,8 @@ def eval_gpqa(model_path, device):
         predicted = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:]).strip()
         if predicted == ex["correct_label"]:
             correct += 1
+        if (i + 1) % 10 == 0:
+            print(f"  GPQA  [{i+1}/{len(test_set_gpqa)}] running accuracy: {correct/(i+1):.2%}")
 
     acc = correct / len(test_set_gpqa)
     print(f"GPQA (held-out 20%, n={len(test_set_gpqa)}): {acc:.2%}")
