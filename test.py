@@ -31,10 +31,8 @@ def eval_gpqa(model_path, device):
 
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     # Match the tokenizer settings used in training (main.py):
-    #   pad_token = eos_token, padding on the left so the model attends
-    #   to the full prompt before generating
+    #   pad_token = eos_token, padding_side uses Qwen's default (right)
     tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "left"
 
     # Load in bf16 to match training precision; eval() disables dropout
     model = AutoModelForCausalLM.from_pretrained(
