@@ -226,7 +226,7 @@ __marimo__/
 output/
 tuned-qwen*/
 
-# Evaluation results (generated locally)
+# Evaluation results (small JSON files — intentionally tracked in git)
 # results/
 
 # CodeCarbon emissions log

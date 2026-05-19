@@ -25,11 +25,17 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 
 ```
 .
-├── main.py           # Training script (LoRA + SFT via TRL)
-├── Data.py           # Dataset loading, formatting, and splitting
-├── test.py           # Evaluation script — manual inference on GSM8K and GPQA
-├── requirements.txt  # Python dependencies
-└── output/           # Training checkpoints (git-ignored; see note below)
+├── main.py              # Training script (LoRA + SFT via TRL)
+├── Data.py              # Dataset loading, formatting, and splitting
+├── test.py              # Evaluation script — manual inference on GSM8K and GPQA
+├── Learnings.ipynb      # Exploratory notebook — experiments and observations
+├── requirements.txt     # Python dependencies
+├── results/
+│   ├── baseline.json    # Baseline evaluation results (Qwen2.5-1.5B)
+│   └── finetuned.json   # Fine-tuned model evaluation results
+├── output/              # Training checkpoints (git-ignored; see note below)
+├── tuned-qwen/          # LoRA adapter weights — merged model (git-ignored)
+└── tuned-qwen-gsm/      # GSM8K-only fine-tuned model weights (git-ignored)
 ```
 
 > **Model weights** are not committed to this repo due to file size. The fine-tuned adapter and merged model can be loaded from the saved local path or uploaded to Hugging Face Hub.
