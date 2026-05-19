@@ -13,12 +13,12 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 
 ## Results
 
-- **GSM8K** — evaluated via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) with chain-of-thought prompting on the official test split (1,319 problems)
+- **GSM8K** — evaluated via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) using 5-shot evaluation (short answers) on 200 samples from the official test split. CoT variant was not used as its 2048-token generation limit makes it impractically slow on a single GPU.
 - **GPQA** — evaluated manually on the held-out 20% split from `Data.py` (seed=42) to prevent data leakage from the 80% used in training
 
 | Dataset | Baseline (Qwen2.5-1.5B) | Fine-tuned | Δ |
 |---|---|---|---|
-| GSM8K (`exact_match`) | — | — | — |
+| GSM8K (`exact_match`, 200 samples, 5-shot) | — | — | — |
 | GPQA (`acc`, held-out 20%) | — | — | — |
 
 > Results will be filled in after running `python test.py` against both models (see [Evaluation](#evaluation) below).

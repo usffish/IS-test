@@ -10,22 +10,21 @@ from lm_eval.utils import make_table
 
 
 def eval_gsm(model_args, device):
-    # Run GSM8K with chain-of-thought prompting via lm-eval.
-    # lm-eval automatically uses the GSM8K test split (1,319 problems).
-    # limit=200: evaluate on 200 examples for a reliable estimate in ~30 min
-    # gen_kwargs max_new_tokens=256: cap generation length (default is 2048,
-    #   which causes ~10s per example and makes the full run take 3+ hours)
+    # Run GSM8K via lm-eval using 5-shot evaluation (short answers, no CoT).
+    # gsm8k_cot generates up to 2048 tokens per example and the task yaml
+    # overrides gen_kwargs, making it impractically slow (~3.6 hrs for 1319 examples).
+    # gsm8k (non-CoT) generates short answers and runs in ~30 minutes.
+    # limit=200: evaluate on 200 examples for a reliable estimate
     results = simple_evaluate(
         model="hf", model_args=model_args,
-        tasks=["gsm8k_cot"],
+        tasks=["gsm8k"],
         apply_chat_template=True, batch_size=8,
         device=device, log_samples=False,
-        gen_kwargs="max_new_tokens=256",
         limit=200,
     )
     print(make_table(results))
-    # exact_match,flexible-extract: finds the final number anywhere in the output
-    return results["results"]["gsm8k_cot"].get("exact_match,flexible-extract", 0)
+    # strict-match: the answer must exactly match the expected number
+    return results["results"]["gsm8k"].get("exact_match,strict-match", 0)
 
 
 def eval_gpqa(model_path, device):
