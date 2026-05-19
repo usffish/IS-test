@@ -13,12 +13,13 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 
 ## Results
 
-Evaluated using [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) with chain-of-thought prompting on GSM8K and normalized accuracy on GPQA.
+- **GSM8K** — evaluated via [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) with chain-of-thought prompting on the official test split (1,319 problems)
+- **GPQA** — evaluated manually on the held-out 20% split from `Data.py` (seed=42) to prevent data leakage from the 80% used in training
 
 | Dataset | Baseline (Qwen2.5-1.5B) | Fine-tuned | Δ |
 |---|---|---|---|
 | GSM8K (`exact_match`) | — | — | — |
-| GPQA (`acc_norm`) | — | — | — |
+| GPQA (`acc`, held-out 20%) | — | — | — |
 
 > Results will be filled in after running `python test.py` against both models (see [Evaluation](#evaluation) below).
 
@@ -90,7 +91,10 @@ The script will:
 
 ## Evaluation
 
-The `test.py` script uses [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) to benchmark any model on `gsm8k_cot` and `gpqa_main`.
+`test.py` uses two different evaluation strategies to avoid data leakage:
+
+- **GSM8K** — uses [lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) on the official test split, which was never seen during training
+- **GPQA** — evaluated manually using the exact held-out 20% from `Data.py` (seed=42). Since GPQA has no official split, using lm-eval's `gpqa_main` task would include training examples in the eval, so the model runs inference directly on `test_set_gpqa` instead
 
 **Step 1 — Evaluate the baseline:**
 ```bash
@@ -99,7 +103,7 @@ python test.py --model Qwen/Qwen2.5-1.5B --output results/baseline.json
 
 **Step 2 — Evaluate the fine-tuned model:**
 ```bash
-python test.py --model ./tuned-qwen --output results/finetuned.json
+python test.py --model ./tuned-qwen-gsm --output results/finetuned.json
 ```
 
 **Step 3 — Compare:**
