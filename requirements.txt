@@ -8,3 +8,6 @@ accelerate==1.13.0
 # Data
 datasets==4.8.5
 huggingface_hub==1.15.0
+
+# Utilities
+tqdm==4.67.1

@@ -27,7 +27,7 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 .
 ├── main.py           # Training script (LoRA + SFT via TRL)
 ├── Data.py           # Dataset loading, formatting, and splitting
-├── test.py           # Evaluation script using lm-evaluation-harness
+├── test.py           # Evaluation script — manual inference on GSM8K and GPQA
 ├── requirements.txt  # Python dependencies
 └── output/           # Training checkpoints (git-ignored; see note below)
 ```
@@ -98,7 +98,7 @@ python test.py --model Qwen/Qwen2.5-1.5B --output results/baseline.json
 
 **Step 2 — Evaluate the fine-tuned model:**
 ```bash
-python test.py --model ./tuned-qwen-gsm --output results/finetuned.json
+python test.py --model ./tuned-qwen --output results/finetuned.json
 ```
 
 **Step 3 — Compare:**
