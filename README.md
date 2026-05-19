@@ -28,6 +28,7 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 ├── main.py              # Training script (LoRA + SFT via TRL)
 ├── Data.py              # Dataset loading, formatting, and splitting
 ├── test.py              # Evaluation script — manual inference on GSM8K and GPQA
+├── Pipeline.ipynb       # End-to-end Colab notebook (setup → train → eval → export)
 ├── requirements.txt     # Python dependencies
 ├── results/
 │   ├── baseline.json    # Baseline evaluation results (Qwen2.5-1.5B)
@@ -40,6 +41,14 @@ The goal is to measure how much reasoning ability a 1.5B parameter model can gai
 > **Model weights** are not committed to this repo due to file size. The fine-tuned adapter and merged model can be loaded from the saved local path or uploaded to Hugging Face Hub.
 
 ## Setup
+
+### Option A — Google Colab (recommended)
+
+Open `Pipeline.ipynb` in Colab. It handles environment setup, clones the repo from the `colab-training` branch, runs training, evaluates both models, and zips the weights and results for download. Requires an A100 runtime and an `HF_TOKEN` secret set in Colab.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/usffish/IS-test/blob/main/Pipeline.ipynb)
+
+### Option B — Local
 
 **Prerequisites:** Python 3.10+, a CUDA-capable GPU (bf16 training is enabled by default).
 
