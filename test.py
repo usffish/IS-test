@@ -30,6 +30,13 @@ def eval_gpqa(model_path, device):
     from Data import test_set_gpqa
 
     tokenizer = AutoTokenizer.from_pretrained(model_path)
+    # Match the tokenizer settings used in training (main.py):
+    #   pad_token = eos_token, padding on the left so the model attends
+    #   to the full prompt before generating
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"
+
+    # Load in bf16 to match training precision; eval() disables dropout
     model = AutoModelForCausalLM.from_pretrained(
         model_path, torch_dtype=torch.bfloat16
     ).to(device).eval()
@@ -43,6 +50,7 @@ def eval_gpqa(model_path, device):
 
         with torch.no_grad():
             # Generate a single token — the model just needs to pick A/B/C/D
+            # do_sample=False ensures greedy (deterministic) decoding
             out = model.generate(**inputs, max_new_tokens=1, do_sample=False)
 
         # Decode only the newly generated token (skip the prompt tokens)
