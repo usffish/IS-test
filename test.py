@@ -1,6 +1,7 @@
 import argparse, json, os, re, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
+from tqdm import tqdm
 
 # Both benchmarks are evaluated manually to avoid lm-eval's hardcoded
 # max_new_tokens=2048 which cannot be overridden via gen_kwargs.
@@ -29,7 +30,7 @@ def eval_gsm(model_path, device):
         return numbers[-1].replace(",", "") if numbers else None
 
     correct = 0
-    for i, ex in enumerate(test):
+    for i, ex in enumerate(tqdm(test, desc="GSM8K")):
         # Format prompt using Qwen's chat template, leave assistant turn open
         prompt = (f"<|im_start|>user\n{ex['question']}<|im_end|>\n"
                   f"<|im_start|>assistant\n")
@@ -68,7 +69,7 @@ def eval_gpqa(model_path, device):
     ).to(device).eval()
 
     correct = 0
-    for i, ex in enumerate(test_set_gpqa):
+    for i, ex in enumerate(tqdm(test_set_gpqa, desc="GPQA")):
         # ex["text"] contains the full example including the answer turn.
         # Strip everything from <|im_start|>assistant onward, then re-add
         # the opening tag to prime the model to generate the answer letter.
