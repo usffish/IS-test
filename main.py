@@ -1,16 +1,28 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from peft import LoraConfig, TaskType
 from trl import SFTTrainer, SFTConfig
 from Data import combined_train
 import torch
 
-# Load model and tokenizer
-model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B", dtype=torch.bfloat16).to("cuda")
-tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B")
-tokenizer.pad_token = tokenizer.eos_token
+MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.2"
 
-# Wrap with LoRA — only trains the attention projection layers,
-# keeping the number of trainable parameters small
+# 4-bit quantisation (QLoRA) to fit Mistral-7B in GPU memory
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_ID,
+    quantization_config=bnb_config,
+    device_map="auto",
+)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"
+
 lora = LoraConfig(
     r=16,
     lora_alpha=32,
@@ -20,7 +32,6 @@ lora = LoraConfig(
     task_type=TaskType.CAUSAL_LM,
 )
 
-# Training configuration
 args = SFTConfig(
     output_dir="./output",
     num_train_epochs=1,
@@ -36,7 +47,6 @@ args = SFTConfig(
     bf16=True,
 )
 
-# Train on combined GSM8K + GPQA dataset
 trainer = SFTTrainer(
     model=model,
     args=args,
@@ -46,4 +56,4 @@ trainer = SFTTrainer(
 )
 
 trainer.train()
-trainer.save_model("./tuned-qwen")
+trainer.save_model("./tuned-mistral")
